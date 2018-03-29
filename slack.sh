@@ -13,7 +13,6 @@ username='Zabbix'
 to="$1"
 subject="$2"
 message="$3"
-severity="$4"
 
 # Change message emoji depending on the subject - smile (RECOVERY), frowning (PROBLEM), or ghost (for everything else)
 #recoversub='^RECOVER(Y|ED)?$'
@@ -25,26 +24,30 @@ severity="$4"
 #	emoji=':ghost:'
 #fi
 
-if [ $subject == "OK" ]; then
-        color="good"
+if [[ $subject == *"RESOLVED"* ]]; then
+    color="good"
+elif [[ $subject == *"Acknowledged"* ]]; then
+    color="#7499FF"
+elif [[ $subject == *"OK"* ]]; then
+    color="good"
 else  
-    case "$severity" in 
-        "Not classified" )
+    case "$message" in 
+        *"Not classified"* )
                 color="#97AAB3"
                 ;;
-        "Information" )
+        *"Information"* )
                 color="#7499FF"
                 ;;
-        "Warning" )
-                color="#FFC859"
+        *"Warning"* )
+                color="warning"
                 ;;
-        "Average" )
+        *"Average"* )
                 color="#FFA059"
                 ;;
-        "High" )
+        *"High"* )
                 color="#E97659"
                 ;;
-        "Disaster" )
+        *"Disaster"* )
                 color="danger"
                 ;;
         * )
@@ -54,5 +57,5 @@ else
 fi
 
 # Build our JSON payload and send it as a POST request to the Slack incoming web-hook URL
-payload="payload={\"channel\": \"${to//\"/\\\"}\", \"username\": \"${username//\"/\\\"}\", \"attachments\": [ { \"fallback\":\"${message//\"/\\\"}\", \"text\": \"${message//\"/\\\"}\", \"color\": \"${color//\"/\\\"}\" } ] }"
+payload="payload={\"channel\": \"${to//\"/\\\"}\", \"username\": \"${username//\"/\\\"}\", \"attachments\": [ { \"fallback\": \"${message//\"/\\\"}\", \"title\": \"${subject//\"/\\\"}\", \"text\": \"${message//\"/\\\"}\", \"color\": \"${color//\"/\\\"}\", \"mrkdwn_in\": [\"text\"] } ] }"
 curl -m 5 --data-urlencode "${payload}" $url -A 'zabbix-slack-alertscript / https://github.com/ericoc/zabbix-slack-alertscript'
